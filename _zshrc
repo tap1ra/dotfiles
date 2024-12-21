@@ -1,0 +1,77 @@
+ZSH=$HOME/.oh-my-zsh
+ZSH_THEME="ys"
+DISABLE_AUTO_UPDATE="true"
+
+source $ZSH/oh-my-zsh.sh
+source ~/.zshenv
+source ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions/zsh-autosuggestions.plugin.zsh
+
+PROMPT="[%*] "
+PROMPT+="%F{blue}%~%f"
+PROMPT+="%% "
+RPROMPT=""
+
+bindkey -e
+
+# リポジトリ内のブランチ情報をpecoでインクリメンタルサーチする
+function peco-branch() {
+    # commiterdate:relativeを commiterdate:localに変更すると普通の時刻表示
+    local selected_line="$(git for-each-ref --format='%(refname:short) | %(committerdate:relative) | %(committername) | %(subject)' --sort=-committerdate refs/heads refs/remotes \
+        | column -t -s '|' \
+        | grep -v 'origin' \
+        | peco \
+        | head -n 1 \
+        | awk '{print $1}')"
+    if [ -n "$selected_line" ]; then
+        BUFFER="git checkout ${selected_line}"
+        CURSOR=$#BUFFER
+        zle accept-line
+    fi
+    zle clear-screen
+}
+zle -N peco-branch
+bindkey '^b' peco-branch
+
+# カレントディレクトリのgitリポジトリをgithubで開く(Ctrl + o)
+function open-git-remote() {
+  git rev-parse --git-dir >/dev/null 2>&1
+  if [[ $? == 0 ]]; then
+    git config --get remote.origin.url | sed -e 's#ssh://git@#https://#g' | xargs open
+  else
+    echo ".git not found.\n"
+  fi
+}
+zle -N open-git-remote
+bindkey '^o' open-git-remote
+
+# historyをpecoでインクリメンタルサーチする(Ctrl + r)
+function peco-select-history() {
+    local tac
+    if which tac > /dev/null; then
+        tac="tac"
+    else
+        tac="tail -r"
+    fi
+    BUFFER=$(\history -n 1 | \
+        eval $tac | \
+        peco --query "$LBUFFER")
+    CURSOR=$#BUFFER
+    zle clear-screen
+}
+zle -N peco-select-history
+bindkey '^r' peco-select-history
+
+# ghqでcloneしたリポジトリをpecoでインクリメンタルサーチする(Ctrl + g)
+function peco-src () {
+    local selected_dir=$(ghq list --full-path | peco --query "$LBUFFER")
+    if [ -n "$selected_dir" ]; then
+        BUFFER="cd ${selected_dir}"
+        zle accept-line
+    fi
+    zle clear-screen
+}
+zle -N peco-src
+bindkey '^g' peco-src
+
+export PATH="$HOME/.anyenv/bin:$PATH"
+eval "$(anyenv init -)"
