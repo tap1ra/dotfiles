@@ -75,3 +75,17 @@ bindkey '^g' peco-src
 
 export PATH="$HOME/.anyenv/bin:$PATH"
 eval "$(anyenv init -)"
+
+alias ll="ls -la"
+alias gs="git status"
+alias gsl="git stash list"
+alias gsd="git stash drop"
+alias gsa="git stash apply"
+alias gc="git checkout"
+
+alias cp="cp -iv"
+alias rm="rm -iv"
+alias mv="mv -iv"
+alias vi="vim"
+
+alias curl_header="curl -D - -s -o /dev/null"
